@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sangīta Bāla Pāḍam - Exercise Tutor</title>
+    <style>
+        :root {
+            /* LIGHT MODE (Default) */
+            --bg-color: #fdfbf7;
+            --card-bg: #fff;
+            --text-color: #333;
+            --primary-color: #8b0000; /* Deep Red */
+            --secondary-color: #d4af37; /* Gold */
+            
+            /* Keyboard Colors (Standard Piano Look) */
+            --key-white: #fff;
+            --key-black: #111;
+            
+            --key-active: #4caf50; /* Green */
+            --key-target: #2196f3; /* Blue */
+            --key-error: #f44336; /* Red */
+            --header-start: #fff;
+            --header-end: #f0e6d2;
+            --notation-bg: #fff;
+            --notation-border: #ddd;
+            --played-color: #aaa;
+            --piano-bg: #222;
+        }
+
+        body.dark-mode {
+            /* DARK MODE Overrides */
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0; /* Light Text */
+            --primary-color: #ff5252; /* Brighter Red for contrast */
+            --secondary-color: #ffd700; /* Brighter Gold */
+            
+            /* 
+               KEYBOARD IN BRIGHT:
+               We REMOVED the overrides for --key-white and --key-black.
+               This allows the piano to use the standard White/Black colors 
+               defined in :root, making it look "Bright" against the dark app.
+            */
+            
+            --key-active: #66bb6a; 
+            --key-target: #42a5f5;
+            --key-error: #ef5350;
+            --header-start: #2c2c2c;
+            --header-end: #1a1a1a;
+            --notation-bg: #2c2c2c;
+            --notation-border: #444;
+            --played-color: #666;
+            --piano-bg: #000;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* HEADER */
+        header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 3px solid var(--secondary-color);
+            width: 100%;
+            background: linear-gradient(to bottom, var(--header-start), var(--header-end));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 5px 0;
+            color: var(--primary-color);
+            font-size: 2rem;
+        }
+
+        #currentExerciseTitle {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin-bottom: 10px;
+            min-height: 1.5em;
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: var(--text-color);
+            opacity: 0.7; /* Slight dimming for aesthetics */
+            font-size: 0.9rem;
+        }
+
+        /* ICONS BAR */
+        .icon-bar {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+        .icon-btn {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: var(--card-bg);
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .icon-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .icon-btn.home-btn { border-color: var(--secondary-color); }
+
+        /* CONTROLS */
+        .controls {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 90%;
+            max-width: 800px;
+        }
+
+        select, button {
+            padding: 10px 15px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Style for Option Groups */
+        select optgroup {
+            font-weight: bold;
+            font-style: normal;
+            color: var(--primary-color);
+        }
+        select option {
+            font-weight: normal;
+            color: var(--text-color);
+            padding-left: 20px;
+        }
+
+        button.primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            font-weight: bold;
+        }
+
+        button.secondary {
+            background-color: var(--secondary-color);
+            color: #000; /* Contrast on gold */
+            border: none;
+        }
+
+        .tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* NOTATION DISPLAY */
+        .notation-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.5rem;
+            background: var(--notation-bg);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid var(--notation-border);
+            width: 90%;
+            max-width: 900px;
+            display: block;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            
+            /* Scroll Settings */
+            height: 160px; 
+            overflow: hidden;
+            transition: scroll-behavior smooth;
+        }
+
+        .notation-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 40px;
+            border-bottom: 1px dashed #eee;
+        }
+        body.dark-mode .notation-line {
+            border-bottom: 1px dashed #444;
+        }
+
+        .note-token {
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .note-token.active {
+            background-color: var(--secondary-color);
+            color: #000; /* Contrast on gold */
+            transform: scale(1.2);
+            font-weight: bold;
+        }
+
+        .note-token.played {
+            color: var(--played-color);
+            text-decoration: line-through;
+        }
+
+        /* PIANO KEYBOARD */
+        .piano-container {
+            width: 100%;
+            max-width: 1000px;
+            overflow-x: auto;
+            padding: 20px 0;
+            display: flex;
+            justify-content: center;
+            background: var(--piano-bg);
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .piano {
+            display: flex;
+            position: relative;
+            height: 200px;
+            user-select: none;
+        }
+
+        .key {
+            position: relative;
+            cursor: pointer;
+            border-radius: 0 0 5px 5px;
+            transition: background 0.1s, transform 0.1s;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .key.white {
+            width: 40px;
+            height: 100%;
+            background: var(--key-white);
+            border: 1px solid #999;
+            z-index: 1;
+            margin: 0 1px;
+        }
+        /* In Dark Mode, we want the key border to be distinct */
+        body.dark-mode .key.white {
+            border: 1px solid #444;
+        }
+
+        .key.black {
+            width: 28px;
+            height: 60%;
+            background: var(--key-black);
+            z-index: 2;
+            margin-left: -16px;
+            margin-right: -16px;
+            color: white;
+        }
+
+        .key.white:active, .key.white.active { background: #ccc; transform: scaleY(0.98); }
+        
+        /* Active state for dark mode on white keys */
+        body.dark-mode .key.white:active, body.dark-mode .key.white.active { background: #999; transform: scaleY(0.98); }
+
+        .key.black:active, .key.black.active { background: #333; transform: scaleY(0.98); }
+        
+        .key.target {
+            background-color: var(--key-target) !important;
+            color: white !important;
+            box-shadow: 0 0 15px var(--key-target);
+        }
+        .key.correct {
+            background-color: var(--key-active) !important;
+            color: white !important;
+        }
+        .key.wrong {
+            background-color: var(--key-error) !important;
+            color: white !important;
+        }
+
+        .swara-label {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            pointer-events: none;
+        }
+
+        .status-bar {
+            margin-top: 10px;
+            color: var(--text-color);
+            opacity: 0.8;
+            font-size: 0.9rem;
+            height: 20px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .start-box {
+            background: var(--card-bg);
+            color: var(--text-color);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        @media (max-width: 600px) {
+            .key.white { width: 30px; }
+            .key.black { width: 20px; margin-left: -11px; margin-right: -11px; }
+            .notation-display { font-size: 1.1rem; height: 120px; }
+            .notation-line { min-height: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="startOverlay" class="overlay">
+    <div class="start-box">
+        <img src="https://z-cdn-media.chatglm.cn/files/604a7941-d31a-4df4-a704-6a2cfa2b71c6.png?auth_key=1869148173-0d0d782527e942e88e3d3cb8a35424d3-0-943dc05d19164521ef5d2f9ef1e45e0a" alt="Saraswati" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px;">
+        <h2>Exercise for Carnatic Music</h2>
+        <p>Exercise-based Interactive Tutor.</p>
+        <p>Select an exercise from the list to begin.</p>
+        <button class="primary" onclick="app.init()">START TUTOR</button>
+    </div>
+</div>
+
+<header>
+    <h1><span style="font-weight: normal;"><b>Exercise for Carnatic Music (pro)</b></span></h1>
+    <div id="currentExerciseTitle">Select an Exercise</div>
+    <div class="subtitle"><b>Interactive &amp; Auto-tutoring Simulation</b></div>
+    
+    <!-- ICONS BAR -->
+    <div class="icon-bar">
+        <div class="icon-btn home-btn" onclick="location.reload()" title="Reset/Home">
+            <img src="https://z-cdn-media.chatglm.cn/files/365febe4-9b8d-4014-9aa6-a9d89a8ec970.png?auth_key=1869148173-681f6721e47c424dad9f6d6d04b764a7-0-ca3ce937de4003755a671b8de97fa394" alt="Home">
+        </div>
+    </div>
+</header>
+
+<div class="controls">
+    <!-- Dropdown will be populated by JS -->
+    <select id="exerciseSelect" onchange="app.loadExercise()">
+        <option value="" disabled="" selected="">Select Exercise</option>
+    </select>
+    
+    <div class="tempo-control">
+        <label>Speed:</label>
+        <input type="range" id="bpmSlider" min="40" max="180" value="80" oninput="app.updateBPM(this.value)">
+        <span id="bpmDisplay">80 BPM</span>
+    </div>
+
+    <button class="secondary" id="themeBtn" onclick="app.toggleTheme()" title="Toggle Theme">🌙</button>
+
+    <button class="primary" id="playBtn" onclick="app.togglePlay()">Play / Listen</button>
+    <button class="secondary" onclick="app.resetLesson()">Reset</button>
+</div>
+
+<div class="notation-display" id="notationArea">
+    <p style="color: var(--played-color);">Select an exercise to begin...</p>
+</div>
+
+<div class="piano-container">
+    <div class="piano" id="piano"></div>
+</div>
+
+<div class="status-bar" id="statusBar">Ready. Connect MIDI keyboard or use mouse.</div>
+
+<script>
+/**
+ * DATA: Organized by Lesson -> Exercise Number
+ */
+const exerciseData = {
+    "L1": {
+        title: "Lesson 1: Swarāvaḷi Varisaigaḷ",
+        description: "These exercises introduce the basic sequence of swaras (notes) in the Rāga Māyāmāḷavagauḷa. They are designed to establish pitch stability and familiarity with the scale.",
+        exercises: [
+            { id: "L1_E1", name: "Exercise 1", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Simple ascent and descent through the scale." },
+            { id: "L1_E2", name: "Exercise 2", text: "Sa Ri Sa Ri | Sa Ri | Ga Ma || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Ṡa Ni | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Practicing repeated notes (SR SR) in the lower register." },
+            { id: "L1_E3", name: "Exercise 3", text: "Sa Ri Ga Sa | Ri Ga | Sa Ri || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Ṡa | Ni Da | Ṡa Ni || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Jumping patterns (SRGS) within the lower scale." },
+            { id: "L1_E4", name: "Exercise 4", text: "Sa Ri Ga Ma | Sa Ri | Ga Ma || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Combinations involving four swaras in sequence." },
+            { id: "L1_E5", name: "Exercise 5", text: "Sa Ri Ga Ma | Pa , | Sa Ri || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma , | Ṡa Ni || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Introduction of pauses (,) or rests between notes." },
+            { id: "L1_E6", name: "Exercise 6", text: "Sa Ri Ga Ma | Pa Da | Sa Ri || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma Ga | Ṡa Ni || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Extending the descent across the middle octave." },
+            { id: "L1_E7", name: "Exercise 7", text: "Sa Ri Ga Ma | Pa Da | Ni , || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma Ga | Ri , || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Practice pausing on key transition notes (Ni and Ri)." },
+            { id: "L1_E8", name: "Exercise 8", text: "Sa Ri Ga Ma | Pa Ma | Ga Ri || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma Pa | Da Ni || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Complex patterns with immediate returns (Pa Ma Ga Ri)." },
+            { id: "L1_E9", name: "Exercise 9", text: "Sa Ri Ga Ma | Pa Ma | Da Pa || Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa Ni Da Pa | Ma Pa | Ga Ma || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Varying the return patterns in the middle register." },
+            { id: "L1_E10", name: "Exercise 10", text: "Sa Ri Ga Ma | Pa , | Ga Ma || Pa , , , | Pa , | , , || Ga Ma Pa Da | Ni Da | Pa Ma || Ga Ma Pa Ga | Ma Ga | Ri Sa ||", desc: "Complex rhythmic patterns with pauses and returns." },
+            { id: "L1_E11", name: "Exercise 11", text: "Ṡa , Ni Da | Ni , | Da Pa || Da , Pa Ma | Pa , | Pa , || Ga Ma Pa Da | Ni Da | Pa Ma || Ga Ma Pa Ga | Ma Ga | Ri Sa ||", desc: "Starting the pattern from the high octave (Ṡa) with pauses." },
+            { id: "L1_E12", name: "Exercise 12", text: "Ṡa Ṡa Ni Da | Ni Ni | Da Pa || Da Da Pa Ma | Pa , | Pa , || Ga Ma Pa Da | Ni Da | Pa Ma || Ga Ma Pa Ga | Ma Ga | Ri Sa ||", desc: "Double note patterns (Janṭa) starting from high Ṡa." },
+            { id: "L1_E13", name: "Exercise 13", text: "Sa Ri Ga Ri | Ga , | Ga Ma || Pa Ma Pa , | Da Pa | Da , || Ma Pa Da Pa | Da Ni | Da Pa || Ma Pa Da Pa | Ma Ga | Ri Sa ||", desc: "Mixed patterns in the lower register with pauses." },
+            { id: "L1_E14", name: "Exercise 14", text: "Sa Ri Ga Ma | Pa , | Pa , || Da Da Pa , | Ma Ma | Pa , || Da Ni Ṡa , | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Combining various pause locations and double notes." }
+        ]
+    },
+    "L2": {
+        title: "Lesson 2: Janṭa Varisaigaḷ",
+        description: "Janṭa Varisaigaḷ involves singing or playing two notes at a time (e.g., Sa Sa). These exercises are crucial for building finger strength, breath control, and smooth transitions.",
+        exercises: [
+            { id: "L2_E1", name: "Exercise 1", text: "Sa Sa Ri Ri Ga Ga Ma Ma | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Ni Ni Da Da Pa Pa | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Basic double note ascent and descent." },
+            { id: "L2_E2", name: "Exercise 2", text: "Sa Sa Ri Ri Ga Ga Ma Ma | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Ma Ma Pa Pa Da Da | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Da Da Ni Ni Ṡa Ṡa | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Da Da Pa Pa Ma Ma | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Ma Ma Ga Ga Ri Ri | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Extended double note patterns across the entire scale." },
+            { id: "L2_E3", name: "Exercise 3", text: "Sa Sa Ri Sa Sa Ri Sa Ri | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri Ga Ri Ri Ga Ri Ga | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Ma Ga Ga Ma Ga Ma | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma Pa Ma Ma Pa Ma Pa | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Da Pa Pa Da Pa Da | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Ni Ṡa Ṡa Ni Ṡa Ni | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Da Ni Ni Da Ni Da | Ni Ni Da Da | Pa Pa Ma Ma || Da Da Pa Da Da Pa Da Pa | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Ma Pa Pa Ma Pa Ma | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma Ga Ma Ma Ga Ma Ga | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Complex triplets and combinations within double notes." },
+            { id: "L2_E4", name: "Exercise 4", text: "Sa Sa Ri Ri Ga Sa Ri Ga | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri Ga Ga Ma Ri Ga Ma | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Ma Ma Pa Ga Ma Pa | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma Pa Pa Da Ma Pa Da | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Da Pa Ni Pa Da Ni | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Ni Ni Da Ṡa Ni Da | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Da Da Pa Ni Da Pa | Ni Ni Da Da | Pa Pa Ma Ma || Da Da Pa Pa Ma Da Pa Ma | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Ma Ma Ga Pa Ma Ga | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma Ga Ga Ri Ma Ga Ri | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Patterns mixing groups of 2 and 4 notes." },
+            { id: "L2_E5", name: "Exercise 5", text: "Sa Sa Ri Ri Ga Ga Ri Ri | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri Ga Ga Ma Ma Ga Ga | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Ma Ma Pa Pa Ma Ma | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma Pa Pa Da Da Pa Pa | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Da Da Ni Ni Da Da | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Ni Ni Da Da Ni Ni | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Da Da Pa Pa Da Da | Ni Ni Da Da | Pa Pa Ma Ma || Da Da Pa Pa Ma Ma Pa Pa | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Ma Ma Ga Ga Ma Ma | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma Ga Ga Ri Ri Ga Ga | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Advanced double note clusters." },
+            { id: "L2_E6", name: "Exercise 6", text: "Sa Sa ,Ri Ri ,Ga Ga Ma Ma | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri ,Ga Ga ,Ma Ma Pa Pa | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga ,Ma Ma ,Pa Pa Da Da | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma ,Pa Pa ,Da Da Ni Ni | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa ,Da Da ,Ni Ni Ṡa Ṡa | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa ,Ni Ni ,Da Da Pa Pa | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni ,Da Da ,Pa Pa Ma Ma | Ni Ni Da Da | Pa Pa Ma Ma || Da Da ,Pa Pa ,Ma Ma Ga Ga | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa ,Ma Ma ,Ga Ga Ri Ri | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma ,Ga Ga ,Ri Ri Sa Sa | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Janṭa with pauses embedded in the sequences." },
+            { id: "L2_E7", name: "Exercise 7", text: "Sa , Sa Ri , Ri Ga Ga | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri , Ri Ga , Ga Ma Ma | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga , Ga Ma , Ma Pa Pa | Ga Ga Ma Ma | Pa Pa Da Da || Ma , Ma Pa , Pa Da Da | Ma Ma Pa Pa | Da Da Ni Ni || Pa , Pa Da , Da Ni Ni | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa , Ṡa Ni , Ni Da Da | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni , Ni Da , Da Pa Pa | Ni Ni Da Da | Pa Pa Ma Ma || Da , Da Pa , Pa Ma Ma | Da Da Pa Pa | Ma Ma Ga Ga || Pa , Pa Ma , Ma Ga Ga | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma , Ma Ga , Ga Ri Ri | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Alternating single notes and pauses with double notes." },
+            { id: "L2_E8", name: "Exercise 8", text: "Sa Sa Sa Ri Ri Ri Ga Ga | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri Ri Ga Ga Ga Ma Ma | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Ga Ma Ma Ma Pa Pa | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma Ma Pa Pa Pa Da Da | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Pa Da Da Da Ni Ni | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Ṡa Ni Ni Ni Da Da | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Ni Da Da Da Pa Pa | Ni Ni Da Da | Pa Pa Ma Ma || Da Da Da Pa Pa Pa Ma Ma | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Pa Ma Ma Ma Ga Ga | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma Ma Ga Ga Ga Ri Ri | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Triple note patterns (Daatu variations)." },
+            { id: "L2_E9", name: "Exercise 9", text: "Sa Sa Ma Ma Ga Ga Ri Ri | Sa Sa Ri Ri | Ga Ga Ma Ma || Ri Ri Pa Pa Ma Ma Ga Ga | Ri Ri Ga Ga | Ma Ma Pa Pa || Ga Ga Da Da Pa Pa Ma Ma | Ga Ga Ma Ma | Pa Pa Da Da || Ma Ma Ni Ni Da Da Pa Pa | Ma Ma Pa Pa | Da Da Ni Ni || Pa Pa Ṡa Ṡa Ni Ni Da Da | Pa Pa Da Da | Ni Ni Ṡa Ṡa || Ṡa Ṡa Pa Pa Da Da Ni Ni | Ṡa Ṡa Ni Ni | Da Da Pa Pa || Ni Ni Ma Ma Pa Pa Da Da | Ni Ni Da Da | Pa Pa Ma Ma || Da Da Ga Ga Ma Ma Pa Pa | Da Da Pa Pa | Ma Ma Ga Ga || Pa Pa Ri Ri Ga Ga Ma Ma | Pa Pa Ma Ma | Ga Ga Ri Ri || Ma Ma Sa Sa Ri Ri Ga Ga | Ma Ma Ga Ga | Ri Ri Sa Sa ||", desc: "Complex combinations utilizing the full scale range." }
+        ]
+    },
+    "L3": {
+        title: "Lesson 3: Upper Sthāyi Varisaigaḷ",
+        description: "Upper Sthāyi (Tara Sthayi) Varisaigaḷ exercises extend practice into the higher octave. This helps in increasing the range of voice or instrument and maintaining pitch accuracy at higher frequencies.",
+        exercises: [
+            { id: "L3_E1", name: "Exercise 1", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa , , , | Ṡa , | , , || Da Ni Ṡa Ṙi | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Introduction to the high octave (Ṡa) and simple returns." },
+            { id: "L3_E2", name: "Exercise 2", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa , , , | Ṡa , | , , || Da Ni Ṡa Ṙi | Ṡa Ṡa | Ṙi Ṡa || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Practicing patterns staying briefly in the upper octave." },
+            { id: "L3_E3", name: "Exercise 3", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa , , , | Ṡa , | , , || Da Ni Ṡa Ṙi | Ġa Ṙi | Ṡa Ṙi || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ṡa | Ṙi Ṡa || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Expanding further to high Ga (Ġa) and Ri (Ṙi)." },
+            { id: "L3_E4", name: "Exercise 4", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa , , , | Ṡa , | , , || Da Ni Ṡa Ṙi | Ġa Ṁa | Ġa Ṙi || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ġa Ṙi | Ṡa Ṙi || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ṡa | Ṙi Ṡa || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Including high Ma (Ṁa) with extended sequences." },
+            { id: "L3_E5", name: "Exercise 5", text: "Sa Ri Ga Ma | Pa Da | Ni Ṡa || Ṡa , , , | Ṡa , | , , || Da Ni Ṡa Ṙi | Ġa Ṁa | Ṗa Ṁa || Ġa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ġa Ṁa | Ġa Ṙi || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ġa Ṙi | Ṡa Ṙi || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ṡa | Ṙi Ṡa || Ṡa Ṙi Ṡa Ni | Da Pa | Ma Pa || Da Ni Ṡa Ṙi | Ṡa Ni | Da Pa || Ṡa Ni Da Pa | Ma Ga | Ri Sa ||", desc: "Comprehensive upper octave practice including high Pa (Ṗa)." }
+        ]
+    },
+    "L4": {
+        title: "Lesson 4: Dhāṭṭu Varisaigaḷ",
+        description: "Dhāṭṭu Varisaigaḷ involves 'jumps' or leaps across the scale (e.g., jumping from Sa to Pa). These exercises train the student to hit precise notes accurately without gliding through the intermediate notes.",
+        exercises: [
+            { id: "L4_E1", name: "Exercise 1", text: "Sa Ri Sa Ga | Ri Ga | Ri Ma || Sa Ma Ga Ri | Sa Ri | Ga Ma || Ri Ga Ri Ma | Ga Ma | Ga Pa || Ri Pa Ma Ga | Ri Ga | Ma Pa || Ga Ma Ga Pa | Ma Pa | Ma Da || Ga Da Pa Ma | Ga Ma | Pa Da || Ma Pa Ma Da | Pa Da | Pa Ni || Ma Ni Da Pa | Ma Pa | Da Ni || Pa Da Pa Ni | Da Ni | Da Ṡa || Pa Ṡa Ni Da | Pa Da | Ni Ṡa || Ṡa Ni Ṡa Da | Ni Da | Ni Pa || Ṡa Pa Da Ni | Ṡa Ni | Da Pa || Ni Da Ni Pa | Da Pa | Da Ma || Ni Ma Pa Da | Ni Da | Pa Ma || Da Pa Da Ma | Pa Ma | Pa Ga || Da Ga Ma Pa | Da Pa | Ma Ga || Pa Ma Pa Ga | Ma Ga | Ma Ri || Pa Ri Ga Ma | Pa Ma | Ga Ri || Ma Ga Ma Ri | Ga Ri | Ga Sa || Ma Sa Ri Ga | Ma Ga | Ri Sa ||", desc: "Systematic jumps across the scale, starting small and increasing range." },
+            { id: "L4_E2", name: "Exercise 2", text: "Sa Ma Ga Ma | Ri Ga | Sa Ri || Sa Ga Ri Ga | Sa Ri | Ga Ma || Ri Pa Ma Pa | Ga Ma | Ri Ga || Ri Ma Ga Ma | Ri Ga | Ma Pa || Ga Da Pa Da | Ma Pa | Ga Ma || Ga Pa Ma Pa | Ga Ma | Pa Da || Ma Ni Da Ni | Pa Da | Ma Pa || Ma Da Pa Da | Ma Pa | Da Ni || Pa Ṡa Ni Ṡa | Da Ni | Pa Da || Pa Ni Da Ni | Pa Da | Ni Ṡa || Ṡa Pa Da Pa | Ni Da | Ṡa Ni || Ṡa Da Ni Da | Ṡa Ni | Da Pa || Ni Ma Pa Ma | Da Pa | Ni Da || Ni Pa Da Pa | Ni Da | Pa Ma || Da Ga Ma Ga | Pa Ma | Da Pa || Da Ma Pa Ma | Da Pa | Ma Ga || Pa Ri Ga Ri | Ma Ga | Pa Ma || Pa Ga Ma Ga | Pa Ma | Ga Ri || Ma Sa Ri Sa | Ga Ri | Ma Ga || Ma Ri Ga Ri | Ma Ga | Ri Sa ||", desc: "More complex and faster jump patterns to enhance agility." }
+        ]
+    }
+};
+
+const SWARA_MAP = {
+    'Sa': 60, 'Ri': 61, 'Ga': 64, 'Ma': 65, 'Pa': 67, 'Da': 68, 'Ni': 71,
+    'Ṡa': 72, 'Ṡi': 73, 'Ṙi': 73, 'Ġa': 76, 'Ṁa': 77, 'Ṗa': 79, 'Ḍa': 80, 'Ṇi': 83,
+    ',': null
+};
+
+class MusicTutor {
+    constructor() {
+        this.audioCtx = null;
+        this.isPlaying = false;
+        this.bpm = 80;
+        this.currentLessonSequence = [];
+        this.linesData = [];
+        this.currentIndex = 0;
+        this.timerID = null;
+        this.midiAccess = null;
+        
+        this.dom = {
+            notation: document.getElementById('notationArea'),
+            piano: document.getElementById('piano'),
+            playBtn: document.getElementById('playBtn'),
+            status: document.getElementById('statusBar'),
+            title: document.getElementById('currentExerciseTitle'),
+            select: document.getElementById('exerciseSelect'),
+            themeBtn: document.getElementById('themeBtn')
+        };
+    }
+
+    init() {
+        document.getElementById('startOverlay').style.display = 'none';
+        this.initAudio();
+        this.renderKeyboard();
+        this.populateDropdowns();
+        this.initMIDI();
+    }
+
+    initAudio() {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.audioCtx = new AudioContext();
+    }
+
+    populateDropdowns() {
+        const select = this.dom.select;
+        
+        for (const [key, lessonData] of Object.entries(exerciseData)) {
+            const group = document.createElement('optgroup');
+            group.label = lessonData.title;
+            
+            lessonData.exercises.forEach(exercise => {
+                const option = document.createElement('option');
+                option.value = exercise.id;
+                option.text = exercise.name;
+                option.dataset.text = exercise.text;
+                option.dataset.desc = exercise.desc;
+                option.dataset.fullTitle = `${lessonData.title} - ${exercise.name}`;
+                group.appendChild(option);
+            });
+            
+            select.appendChild(group);
+        }
+    }
+
+    loadExercise() {
+        const select = this.dom.select;
+        if (!select.value) return;
+
+        const option = select.options[select.selectedIndex];
+        const rawText = option.dataset.text;
+        const fullTitle = option.dataset.fullTitle;
+
+        this.dom.title.textContent = fullTitle;
+
+        const rawLines = rawText.split('||').filter(line => line.trim().length > 0);
+        this.linesData = [];
+        this.currentLessonSequence = [];
+        let globalIndex = 0;
+
+        rawLines.forEach((lineText, lineIdx) => {
+            const notes = this.parseLine(lineText);
+            this.linesData.push({ notes: notes, startIndex: globalIndex });
+            notes.forEach(note => {
+                this.currentLessonSequence.push({ ...note, lineIndex: lineIdx });
+                globalIndex++;
+            });
+        });
+
+        this.currentIndex = 0;
+        this.stop();
+        this.renderNotation();
+        this.highlightTarget();
+    }
+
+    playTone(midiNote, duration = 0.5, type = 'triangle') {
+        if (!this.audioCtx) return;
+        if (midiNote === null) return;
+
+        const osc = this.audioCtx.createOscillator();
+        const gainNode = this.audioCtx.createGain();
+
+        osc.type = type;
+        const freq = 440 * Math.pow(2, (midiNote - 69) / 12);
+        osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(0, this.audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, this.audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(this.audioCtx.destination);
+
+        osc.start();
+        osc.stop(this.audioCtx.currentTime + duration + 0.1);
+    }
+
+    initMIDI() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then((access) => {
+                this.midiAccess = access;
+                const inputs = access.inputs;
+                if (inputs.size > 0) {
+                    this.dom.status.textContent = `MIDI Connected: ${inputs.size} devices found.`;
+                    inputs.forEach(input => input.onmidimessage = (msg) => this.handleMidiMessage(msg));
+                } else {
+                    this.dom.status.textContent = "No MIDI devices detected. Use mouse.";
+                }
+            }, () => this.dom.status.textContent = "WebMIDI not supported.");
+        }
+    }
+
+    handleMidiMessage(message) {
+        const command = message.data[0];
+        const note = message.data[1];
+        const velocity = (message.data.length > 2) ? message.data[2] : 0;
+        if (command === 144 && velocity > 0) {
+            this.handleInput(note);
+        }
+    }
+
+    renderKeyboard() {
+        const startNote = 48; 
+        const endNote = 84;   
+        for (let i = startNote; i <= endNote; i++) {
+            const key = document.createElement('div');
+            const isBlack = [1, 3, 6, 8, 10].includes(i % 12);
+            key.className = `key ${isBlack ? 'black' : 'white'}`;
+            key.dataset.note = i;
+            
+            let label = "";
+            if(i === 60 || i === 72) label = "Sa";
+            else if(i === 61 || i === 73) label = "Ri";
+            else if(i === 64 || i === 76) label = "Ga";
+            else if(i === 65 || i === 77) label = "Ma";
+            else if(i === 67 || i === 79) label = "Pa";
+            else if(i === 68 || i === 80) label = "Da";
+            else if(i === 71 || i === 83) label = "Ni";
+
+            if (label) {
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'swara-label';
+                labelSpan.innerText = label;
+                key.appendChild(labelSpan);
+            }
+
+            key.addEventListener('mousedown', () => {
+                this.handleInput(i);
+                const reset = () => {
+                    key.classList.remove('active');
+                    key.removeEventListener('mouseup', reset);
+                    key.removeEventListener('mouseleave', reset);
+                };
+                key.classList.add('active');
+                key.addEventListener('mouseup', reset);
+                key.addEventListener('mouseleave', reset);
+            });
+
+            this.dom.piano.appendChild(key);
+        }
+    }
+
+    parseLine(text) {
+        const notes = [];
+        let i = 0;
+        while (i < text.length) {
+            const char = text[i];
+            if (char === ' ' || char === ' ' || char === '\n' || char === '|') {
+                i++;
+                continue;
+            }
+            if (char === ',') {
+                notes.push({ type: 'pause', raw: ',' });
+                i++;
+                continue;
+            }
+            const twoChar = text.substr(i, 2);
+            const oneChar = text.substr(i, 1);
+            if (SWARA_MAP.hasOwnProperty(twoChar)) {
+                notes.push({ type: 'note', raw: twoChar, midi: SWARA_MAP[twoChar] });
+                i += 2;
+            } else if (SWARA_MAP.hasOwnProperty(oneChar)) {
+                notes.push({ type: 'note', raw: oneChar, midi: SWARA_MAP[oneChar] });
+                i++;
+            } else {
+                i++;
+            }
+        }
+        return notes;
+    }
+
+    renderNotation() {
+        this.dom.notation.innerHTML = '';
+        this.linesData.forEach((lineData, lineIdx) => {
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'notation-line';
+            lineDiv.id = `line-${lineIdx}`;
+            
+            lineData.notes.forEach((note, noteIdx) => {
+                const globalIdx = lineData.startIndex + noteIdx;
+                const span = document.createElement('span');
+                span.textContent = note.raw;
+                span.className = 'note-token';
+                span.id = `note-${globalIdx}`;
+                
+                if (note.type === 'pause') {
+                    span.style.color = 'var(--played-color)';
+                    span.textContent = ',';
+                }
+                
+                lineDiv.appendChild(span);
+            });
+            this.dom.notation.appendChild(lineDiv);
+        });
+    }
+
+    highlightTarget() {
+        document.querySelectorAll('.key.target').forEach(k => k.classList.remove('target'));
+        
+        if (this.currentIndex >= this.currentLessonSequence.length) {
+            this.stop();
+            this.dom.status.textContent = "Exercise Complete!";
+            return;
+        }
+
+        const target = this.currentLessonSequence[this.currentIndex];
+        const activeLineIdx = target.lineIndex;
+        
+        document.querySelectorAll('.note-token').forEach(el => el.classList.remove('active'));
+        const activeNote = document.getElementById(`note-${this.currentIndex}`);
+        if(activeNote) activeNote.classList.add('active');
+
+        if (target.type === 'note' && target.midi !== null) {
+            const keyEl = document.querySelector(`.key[data-note="${target.midi}"]`);
+            if (keyEl) keyEl.classList.add('target');
+        }
+
+        this.scrollNotation(activeLineIdx);
+    }
+
+    scrollNotation(lineIndex) {
+        if (lineIndex < 2) {
+            this.dom.notation.scrollTop = 0;
+            return;
+        }
+        const previousLineEl = document.getElementById(`line-${lineIndex - 1}`);
+        if (previousLineEl) {
+            previousLineEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    handleInput(midiNote) {
+        if (this.currentLessonSequence.length === 0) return;
+        const expected = this.currentLessonSequence[this.currentIndex];
+        const keyEl = document.querySelector(`.key[data-note="${midiNote}"]`);
+        
+        if (keyEl) {
+            keyEl.classList.remove('wrong', 'correct');
+            void keyEl.offsetWidth;
+        }
+
+        if (expected.type === 'note' && midiNote === expected.midi) {
+            if (keyEl) keyEl.classList.add('correct');
+            this.playTone(midiNote, 60 / this.bpm);
+            
+            const noteEl = document.getElementById(`note-${this.currentIndex}`);
+            if(noteEl) noteEl.classList.add('played');
+
+            this.currentIndex++;
+            this.highlightTarget();
+            
+            setTimeout(() => {
+                if (keyEl) keyEl.classList.remove('correct');
+            }, 200);
+
+        } else {
+            if (keyEl) keyEl.classList.add('wrong');
+            this.dom.status.textContent = `Wrong! Expected: ${expected.raw || 'Pause'}`;
+            setTimeout(() => {
+                if (keyEl) keyEl.classList.remove('wrong');
+            }, 200);
+        }
+    }
+
+    togglePlay() {
+        if (this.isPlaying) this.stop();
+        else this.play();
+    }
+
+    play() {
+        if (this.currentLessonSequence.length === 0) {
+            this.dom.status.textContent = "Please select an exercise first.";
+            return;
+        }
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+
+        this.isPlaying = true;
+        this.dom.playBtn.textContent = "Stop";
+        this.dom.status.textContent = "Auto-Playing... Press Stop to end.";
+        this.tutorLoop();
+    }
+
+    stop() {
+        this.isPlaying = false;
+        this.dom.playBtn.textContent = "Play / Listen";
+        clearTimeout(this.timerID);
+    }
+    
+    resetLesson() {
+        this.stop();
+        this.currentIndex = 0;
+        this.dom.notation.scrollTop = 0;
+        this.renderNotation();
+        this.highlightTarget();
+        this.dom.status.textContent = "Reset.";
+    }
+
+    tutorLoop() {
+        if (!this.isPlaying) return;
+
+        const item = this.currentLessonSequence[this.currentIndex];
+        const noteEl = document.getElementById(`note-${this.currentIndex}`);
+        if(noteEl) noteEl.classList.add('active');
+
+        const duration = (60 / this.bpm) * 1000;
+
+        if (item.type === 'note') {
+            this.playTone(item.midi, duration / 1000);
+            const keyEl = document.querySelector(`.key[data-note="${item.midi}"]`);
+            if (keyEl) {
+                keyEl.classList.add('correct');
+                setTimeout(() => keyEl.classList.remove('correct'), duration * 0.8);
+            }
+        }
+
+        if(noteEl) noteEl.classList.add('played');
+
+        this.currentIndex++;
+        
+        if (this.currentIndex >= this.currentLessonSequence.length) {
+            this.stop();
+            this.dom.status.textContent = "Exercise Finished.";
+            return;
+        }
+
+        this.highlightTarget();
+        this.timerID = setTimeout(() => {
+            this.tutorLoop();
+        }, duration);
+    }
+
+    updateBPM(val) {
+        this.bpm = parseInt(val);
+        document.getElementById('bpmDisplay').innerText = `${this.bpm} BPM`;
+    }
+
+    toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        this.dom.themeBtn.textContent = isDark ? '☀️' : '🌙';
+    }
+}
+
+const app = new MusicTutor();
+</script>
+
+</body></html>
